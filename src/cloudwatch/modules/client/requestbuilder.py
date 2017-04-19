@@ -18,14 +18,14 @@ class RequestBuilder(object):
     _ALGORITHM = "AWS4-HMAC-SHA256"
     _V4_TERMINATOR = "aws4_request"
     
-    def __init__(self, credentials, region):
+    def __init__(self, credentials, region, enable_high_definition_metrics):
         self.credentials = credentials
         self.region = region
         self.namespace = ""
         self.datestamp = None
         self.aws_timestamp = None
         self.payload = ""  # for HTTP GET payload is always empty
-        self.querystring_builder = QuerystringBuilder()
+        self.querystring_builder = QuerystringBuilder(enable_high_definition_metrics)
         self.signer = Signer(credentials, region, self._SERVICE, self._ALGORITHM)
     
     def create_signed_request(self, namespace, metric_list):

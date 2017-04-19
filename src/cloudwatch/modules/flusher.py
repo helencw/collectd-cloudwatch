@@ -94,6 +94,7 @@ class Flusher(object):
         nan_value_count = 0
         dimension_key = self._get_metric_key(value_list)
         adjusted_time = int(value_list.time)
+
         key = dimension_key
         if self.enable_high_definition_metrics:
             key = dimension_key + "-" + str(adjusted_time)
@@ -101,17 +102,23 @@ class Flusher(object):
             nan_value_count = self._add_values_to_metric(self.metric_map[key], value_list)
         else:
             if len(self.metric_map) < self.max_metrics_to_aggregate:
-                metric = MetricDataBuilder(self.config, value_list, adjusted_time).build()
-                nan_value_count = self._add_values_to_metric(metric, value_list)
-                if nan_value_count != len(value_list.values):
-                    self.metric_map[key] = metric
+                nan_value_count = self._add_metric_to_queue(value_list, adjusted_time, key)
             else:
                 if self.enable_high_definition_metrics:
                     self._flush()
+                    nan_value_count = self._add_metric_to_queue(value_list, adjusted_time, key)
                 else:
                     self._LOGGER.warning("Batching queue overflow detected. Dropping metric.")
         if nan_value_count:
             self.record_nan_value(dimension_key, value_list)
+
+    def _add_metric_to_queue(self, value_list, adjusted_time, key):
+        nan_value_count = 0
+        metric = MetricDataBuilder(self.config, value_list, adjusted_time).build()
+        nan_value_count = self._add_values_to_metric(metric, value_list)
+        if nan_value_count != len(value_list.values):
+            self.metric_map[key] = metric
+        return nan_value_count
 
     def _get_metric_key(self, value_list):
         """
